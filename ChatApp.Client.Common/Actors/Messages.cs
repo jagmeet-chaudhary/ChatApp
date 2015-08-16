@@ -52,6 +52,8 @@ namespace ChatApp.Common
             public ValidationError(string reason) : base(reason) { }
         }
         #endregion
+
+
         public class ConsoleCommand
         {
             public string Command { get; private set; }

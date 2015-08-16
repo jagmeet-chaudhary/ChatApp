@@ -21,21 +21,7 @@ namespace ChatApp.Server
     {
         List<string> _registeredUsers;
         Dictionary<string, ChatUserReference> _userAddresses;
-        ICancelable _scheduler;
 
-        protected override void PreStart()
-        {
-
-
-            //ActorSystemContainer.Instance.System.Scheduler.Advanced.ScheduleRepeatedly(new TimeSpan(0, 0, 10), new TimeSpan(0, 0, 10), GetUserStatus);
-            //_scheduler = ActorSystemContainer.Instance.System.Scheduler.ScheduleTellRepeatedlyCancelable(new TimeSpan(0, 0, 10), new TimeSpan(0, 0, 25), Self, new Messages.StatusCheck(), Self);
-            base.PreStart();
-        }
-        protected override void PostStop()
-        {
-            //_scheduler.Cancel();
-            base.PostStop();
-        }
         public ChatServerCoordinatorActor()
         {
             _userAddresses = new Dictionary<string, ChatUserReference>();
@@ -43,9 +29,6 @@ namespace ChatApp.Server
             Receive<Messages.RegisterUser>(x => HandleRegisterUser(x));
             Receive<Messages.TryInitializeChat>(x => HandleTryInitializeChat(x));
             Receive<Terminated>(x => HandleTerminated(x));
-            //Receive<Messages.Ping>(x => HandlePing(x));
-            //Receive<Messages.Pong>(x => HandlePong(x));
-            //Receive<Messages.StatusCheck>(x => HandleStatusCheck(x));
 
             Receive<Messages.ChangeState>(x => x.State == UserState.Online, x => HandleStateOnline(x));
             Receive<Messages.ChangeState>(x => x.State == UserState.Offline, x => HandleStateOffline(x));
@@ -66,46 +49,13 @@ namespace ChatApp.Server
             }
         }
 
-        //private void HandleStatusCheck(Messages.StatusCheck statusCheckMessage)
-        //{
-        //    try
-        //    {
-        //        ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.InputSuccess("Updating status..."));
-        //        foreach (var userAddress in _userAddresses)
-        //        {
-        //            if (userAddress.Value.StatusCheckRetryCounter == 0)
-        //                Self.Tell(new Messages.ChangeState(UserState.Offline, userAddress.Key));
-        //        }
-
-
-        //        foreach (var userAddress in _userAddresses)
-        //        {
-        //            //userAddress.Value.ActorReference.Ask<Messages.Pong>(new Messages.Ping("Check Status")).PipeTo<Messages.Pong>(Self);
-        //            userAddress.Value.ActorReference.Tell(new Messages.Ping("Check Status"));
-        //            userAddress.Value.StatusCheckRetryCounter--;
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-
-                
-        //    }
-        //}
-
-        //private void HandlePong(Messages.Pong x)
-        //{
-        //   if(_userAddresses.ContainsKey(x.Message))
-        //   {
-        //       _userAddresses[x.Message].StatusCheckRetryCounter = 3;
-        //   }
-        //}
        
         private void HandleStateOffline(Messages.ChangeState x)
         {
             if (_userAddresses.Keys.Contains(x.UserName))
             {
                 _userAddresses.Remove(x.UserName);
-                ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.InputError(string.Format("{0} is offline now.", x.UserName)));
+                ConsoleActorContainer.Instance.WriterActor.Tell(string.Format("{0} is offline now.", x.UserName));
             }
         }
 
@@ -116,7 +66,7 @@ namespace ChatApp.Server
                 Context.Watch(Sender);
                 _userAddresses.Add(x.UserName, new ChatUserReference() { ActorReference = Sender});
             }
-            ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.InputSuccess(string.Format("{0} is online now.", x.UserName)));
+            ConsoleActorContainer.Instance.WriterActor.Tell(string.Format("{0} is online now.", x.UserName));
         }
 
         private void  HandlePing(Messages.Ping x)

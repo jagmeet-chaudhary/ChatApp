@@ -26,6 +26,7 @@ namespace ChatApp.Common
             }
             else
             {
+                Console.ForegroundColor = ConsoleColor.Blue;
                 Console.WriteLine(message);
             }
             Console.ResetColor();
