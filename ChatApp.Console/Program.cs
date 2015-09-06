@@ -44,8 +44,9 @@ namespace ChatApp.Console
                 //args[0] = "Exit";
                 //args[1] = "-u";
                 //args[2] = "jagmeet";
-
-                CommandLineExecutor.InvokeCommand(args, typeof(ConsoleCommands));
+                System.Console.WriteLine("Started console...");
+                System.Console.ReadLine();
+                //CommandLineExecutor.InvokeCommand(args, typeof(ConsoleCommands));
             }
             catch( InvalidCommandException iex)
             {

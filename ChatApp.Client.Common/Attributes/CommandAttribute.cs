@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ChatApp.Common
 {
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class CommandAttribute : Attribute
     {
         public readonly string CommandName;
@@ -15,7 +15,7 @@ namespace ChatApp.Common
             CommandName = commandName;
         }
     }
-    [AttributeUsage(AttributeTargets.Parameter)]
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
     public class CommandParameterAttribute : Attribute
     {
         public readonly string ParameterName;

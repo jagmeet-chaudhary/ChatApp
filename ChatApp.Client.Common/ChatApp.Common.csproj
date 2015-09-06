@@ -48,13 +48,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actors\ConsoleActorContainer.cs" />
+    <Compile Include="Actors\ConsoleMessages.cs" />
     <Compile Include="Actors\ConsoleReaderActor.cs" />
     <Compile Include="Actors\ConsoleWriterActor.cs" />
     <Compile Include="Actors\Messages.cs" />
     <Compile Include="Actors\ActorSystemContainer.cs" />
     <Compile Include="Attributes\CommandAttribute.cs" />
+    <Compile Include="Constants\ActorNames.cs" />
     <Compile Include="Exception\InvalidCommandException.cs" />
-    <Compile Include="Helpers\CommandLineExecutor.cs" />
+    <Compile Include="Helpers\CommandToMessageConverter.cs" />
+    <Compile Include="Helpers\HelperExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

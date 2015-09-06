@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using ChatApp.Client;
+using ChatApp.Client.Common;
 using ChatApp.Common;
 using System;
 using System.Collections.Generic;
@@ -29,8 +30,8 @@ namespace ChatApp.ChatConsole
         static void Main(string[] args)
         {
             //Come online
-            var clientCoordinatorActor = ActorSystemContainer.Instance.System.ActorOf(Props.Create(() => new ChatClientCoordinatorActor()));
-            ConsoleActorContainer.Instance.ReaderActor.Ask("Start");
+            var clientCoordinatorActor = ActorSystemContainer.Instance.System.ActorOf(Props.Create(() => new ChatClientCoordinatorActor()), ActorNames.ClientCoordinatorActor);
+            
             ActorSystemContainer.Instance.System.AwaitTermination();
             //var consoleReaderActor = ClientActorSystemContainer.Instance.System.ActorOf(Props.Create(() => new ConsoleReaderActor()));
             //clientCoordinatorActor.Tell("Start");

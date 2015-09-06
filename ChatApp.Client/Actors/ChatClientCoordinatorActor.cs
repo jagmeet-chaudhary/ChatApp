@@ -8,33 +8,76 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ChatApp.Common;
+using System.Diagnostics;
+using ChatApp.Client.Common;
 namespace ChatApp.Client
 {
     public class ChatClientCoordinatorActor : ReceiveActor
     {
-        private readonly  string userName = "Jags";
-        private ActorSelection _chatCoordinatorActor;
+        private string userName;
+        private ActorSelection _chatServerCoordinatorActor;
         
         private IActorRef _serverActor;
         public ChatClientCoordinatorActor()
         {
 
             
+            
+            
+            Become(LoggedOut);
+            ConsoleActorContainer.Instance.ReaderActor.Tell(new Messages.ContinueProcessing());
+        }
+
+        private void LoggedOut()
+        {
+            ConsoleActorContainer.Instance.ReaderActor.Tell(new Messages.SetPrompt("LoggedOut"));
+            Receive<ConsoleCommandMessages.LoginAsCommandMessage>(x => HandleLoginAsCommand(x));
+            Receive<Messages.ConsoleCommand>(x => HandleConsoleCommand(x));
+            //ReceiveAny(x => ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.InputError("Please login.")));
+        }
+        private void LoggedIn()
+        {
+            ConsoleActorContainer.Instance.ReaderActor.Tell(new Messages.SetPrompt(string.Format("LoggedIn:{0}",userName)));
             Receive<Messages.Ok>(x => HandleOK(x));
             Receive<Messages.StartChat>(x => HandleStartChat(x));
             Receive<Messages.Ping>(x => HandlePing(x));
-            Receive<Messages.TryInitializeChat>(x => HandleTryInitializeChat(x));
             Receive<Messages.ConsoleCommand>(x => HandleConsoleCommand(x));
+
+            //Conosle Command messages
+            Receive<ConsoleCommandMessages.StartChatCommandMessage>(x => HandleStartChatCommand(x));
+            Receive<ConsoleCommandMessages.LogOutCommandMessage>(x => HandleLogOutCommand(x));
+            
+        }
+
+        private void HandleLogOutCommand(ConsoleCommandMessages.LogOutCommandMessage x)
+        {
+            userName = string.Empty;
+            _chatServerCoordinatorActor.Tell(new Messages.ChangeState(UserState.Offline, userName));
+            Become(LoggedOut);
+        }
+        private void HandleLoginAsCommand(ConsoleCommandMessages.LoginAsCommandMessage loginAsCmdMsg)
+        {
+            userName = loginAsCmdMsg.UserName;
+            _chatServerCoordinatorActor.Tell(new Messages.ChangeState(UserState.Online, userName));
+            Become(LoggedIn);
+        }
+
+        private void  HandleStartChatCommand(ConsoleCommandMessages.StartChatCommandMessage startChatCommandMsg)
+        {
+
+            _chatServerCoordinatorActor.Ask<Messages.StartChat>(new Messages.TryInitializeChat(userName, startChatCommandMsg.UserName))
+                .PipeTo<Messages.StartChat>(Self);
         }
 
         private void HandlePing(Messages.Ping x)
         {
-            _chatCoordinatorActor.Tell(new Messages.Pong(userName));
+
+            _chatServerCoordinatorActor.Tell(new Messages.Pong(userName));
         }
         protected override void PostStop()
         {
             ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.InputSuccess("Stopping...."));
-            _chatCoordinatorActor.Tell(new Messages.ChangeState(UserState.Offline, userName));
+           
             base.PostStop();
         }
         
@@ -42,45 +85,43 @@ namespace ChatApp.Client
         protected override void PreStart()
         {
             //get a reference to the remote actor
-            _chatCoordinatorActor = ActorSystemContainer.Instance.System.ActorSelection("akka.tcp://ChatAppServer@localhost:8080/user/ChatApp");
-            _chatCoordinatorActor.Tell(new Messages.ChangeState(UserState.Online, userName));
+            _chatServerCoordinatorActor = ActorSystemContainer.Instance.System.ActorSelection("akka.tcp://ChatAppServer@localhost:8080/user/ChatApp");
             base.PreStart();
         }
         private void HandleConsoleCommand(Messages.ConsoleCommand consoleCommandMsg)
         {
-            var args = ProcessCommand(consoleCommandMsg.Command);
-            CommandLineExecutor.InvokeCommand(args, typeof(ChatClientCoordinatorActor));
+            object message = null;
+            try
+            {
+                message = consoleCommandMsg.Command.ToMessageType();
+                Self.Tell(message);
+            }
+            catch (InvalidCommandException ex)
+            {
+                ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.InputError(ex.Message));
+                
+            }
+            
         }
-
-        private void HandleTryInitializeChat(Messages.TryInitializeChat tryInitiailizeChatMsg)
-        {
-            _chatCoordinatorActor.Ask<Messages.StartChat>(new Messages.TryInitializeChat(tryInitiailizeChatMsg.From, tryInitiailizeChatMsg.To))
-                .PipeTo<Messages.StartChat>(Self);
-                    
-        }
-       
-
         private void HandleStartChat(Messages.StartChat startChatMsg)
         {
             _serverActor = startChatMsg.Server;
-            ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.InputSuccess("Connected chat..."));
+            var chatProcess = new Process();
+            chatProcess.StartInfo.FileName = @"C:\Users\jagmeet.jag-richi\Documents\Git\ChatApp.Console\ChatApp.Console\bin\Debug\ChatApp.Console.exe";
+            chatProcess.StartInfo.Arguments = string.Format("StartChat -u {0}", userName);
+            chatProcess.StartInfo.UseShellExecute = true;
+            chatProcess.Start();
+            
         }
 
         private void HandleOK(Messages.Ok ok)
         {
             
         }
-        private  string[] ProcessCommand(string command)
-        {
-            string[] splitCommands = command.Split(' ');
-            return splitCommands.Select(x => x.Trim()).ToArray();
-        }
-        [Command("StartChat")]
-        private  void StartChat([CommandParameter("u")]string userName)
-        {
 
-            Self.Tell(new Messages.TryInitializeChat(this.userName, userName));
-        }
 
+
+
+        
     }
 }

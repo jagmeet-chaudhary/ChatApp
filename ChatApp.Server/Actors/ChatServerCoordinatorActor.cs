@@ -80,14 +80,15 @@ namespace ChatApp.Server
                 if(_userAddresses.Keys.Contains(x.To))
                     participantList.Add(x.To,_userAddresses[x.To].ActorReference);
              if(_userAddresses.Keys.Contains(x.From))
-                    participantList.Add(x.To,_userAddresses[x.From].ActorReference);
+                    participantList.Add(x.From,_userAddresses[x.From].ActorReference);
             if(participantList.Count>1)
             {
                 var chatServerActor = Context.ActorOf(Props.Create(() =>
                       new ChatServerActor()));
                 var addToChat = new Messages.AddToChat(participantList);
                 chatServerActor.Tell(addToChat);
-                Sender.Tell(new Messages.StartChat(chatServerActor));
+                _userAddresses[x.To].ActorReference.Tell(new Messages.StartChat(chatServerActor));
+                _userAddresses[x.From].ActorReference.Tell(new Messages.StartChat(chatServerActor));
             }
               
      

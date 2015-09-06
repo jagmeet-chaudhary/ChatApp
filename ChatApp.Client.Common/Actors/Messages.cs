@@ -9,7 +9,14 @@ namespace ChatApp.Common
 {
     public class Messages
     {
-
+        public class SetPrompt
+        {
+            public SetPrompt(string prompt)
+            {
+                Prompt = prompt;
+            }
+            public string Prompt { get; private set; }
+        }
         #region Success message
         public class InputSuccess
         {
@@ -53,6 +60,7 @@ namespace ChatApp.Common
         }
         #endregion
 
+        public class ContinueProcessing { }
 
         public class ConsoleCommand
         {
