@@ -14,9 +14,9 @@ namespace ChatApp.Client
 {
     public class ChatClientCoordinatorActor : ReceiveActor
     {
-        private string userName;
+        private string _userName;
         private ActorSelection _chatServerCoordinatorActor;
-        
+        List<IActorRef> clientActors = new List<IActorRef>();
         private IActorRef _serverActor;
         public ChatClientCoordinatorActor()
         {
@@ -25,9 +25,11 @@ namespace ChatApp.Client
             
             
             Become(LoggedOut);
+            //Become(Testing);
             ConsoleActorContainer.Instance.ReaderActor.Tell(new Messages.ContinueProcessing());
         }
 
+       
         private void LoggedOut()
         {
             ConsoleActorContainer.Instance.ReaderActor.Tell(new Messages.SetPrompt("LoggedOut"));
@@ -37,7 +39,7 @@ namespace ChatApp.Client
         }
         private void LoggedIn()
         {
-            ConsoleActorContainer.Instance.ReaderActor.Tell(new Messages.SetPrompt(string.Format("LoggedIn:{0}",userName)));
+            ConsoleActorContainer.Instance.ReaderActor.Tell(new Messages.SetPrompt(string.Format("LoggedIn:{0}",_userName)));
             Receive<Messages.Ok>(x => HandleOK(x));
             Receive<Messages.StartChat>(x => HandleStartChat(x));
             Receive<Messages.Ping>(x => HandlePing(x));
@@ -51,28 +53,28 @@ namespace ChatApp.Client
 
         private void HandleLogOutCommand(ConsoleCommandMessages.LogOutCommandMessage x)
         {
-            userName = string.Empty;
-            _chatServerCoordinatorActor.Tell(new Messages.ChangeState(UserState.Offline, userName));
+            _userName = string.Empty;
+            _chatServerCoordinatorActor.Tell(new Messages.ChangeState(UserState.Offline, _userName));
             Become(LoggedOut);
         }
         private void HandleLoginAsCommand(ConsoleCommandMessages.LoginAsCommandMessage loginAsCmdMsg)
         {
-            userName = loginAsCmdMsg.UserName;
-            _chatServerCoordinatorActor.Tell(new Messages.ChangeState(UserState.Online, userName));
+            _userName = loginAsCmdMsg.UserName;
+            _chatServerCoordinatorActor.Tell(new Messages.ChangeState(UserState.Online, _userName));
             Become(LoggedIn);
         }
 
         private void  HandleStartChatCommand(ConsoleCommandMessages.StartChatCommandMessage startChatCommandMsg)
         {
+            
 
-            _chatServerCoordinatorActor.Ask<Messages.StartChat>(new Messages.TryInitializeChat(userName, startChatCommandMsg.UserName))
+            _chatServerCoordinatorActor.Ask<Messages.StartChat>(new Messages.TryInitializeChat(_userName, startChatCommandMsg.UserName))
                 .PipeTo<Messages.StartChat>(Self);
         }
 
         private void HandlePing(Messages.Ping x)
         {
-
-            _chatServerCoordinatorActor.Tell(new Messages.Pong(userName));
+            Console.WriteLine("received : " + x.Message);
         }
         protected override void PostStop()
         {
@@ -106,14 +108,32 @@ namespace ChatApp.Client
         private void HandleStartChat(Messages.StartChat startChatMsg)
         {
             _serverActor = startChatMsg.Server;
+            IActorRef clientActor = Context.ActorOf(Props.Create<ChatClientActor>(_serverActor,_userName),_userName);
+            var remoteAddress = ((ExtendedActorSystem)ActorSystemContainer.Instance.System).Provider.DefaultAddress;
+            var clientActorFullRemoteAddress = clientActor.Path.ToStringWithAddress(remoteAddress);
+            clientActors.Add(clientActor);
+
             var chatProcess = new Process();
             chatProcess.StartInfo.FileName = @"C:\Users\jagmeet.jag-richi\Documents\Git\ChatApp.Console\ChatApp.Console\bin\Debug\ChatApp.Console.exe";
-            chatProcess.StartInfo.Arguments = string.Format("StartChat -u {0}", userName);
             chatProcess.StartInfo.UseShellExecute = true;
+            chatProcess.StartInfo.Arguments = string.Format("{0} {1}", _userName, clientActorFullRemoteAddress);
             chatProcess.Start();
-            
-        }
 
+
+
+        }
+        private void Testing()
+        {
+
+            Context.ActorOf(Props.Create<ChatClientActor>(Self, "Jags"), "Jags");
+            var dkjd = ((ExtendedActorSystem)ActorSystemContainer.Instance.System).Provider.DefaultAddress;
+            var path = string.Format(@"{0}/{1}", Self.Path.ToStringWithAddress(dkjd), "Jags");
+            var chatProcess = new Process();
+            chatProcess.StartInfo.FileName = @"C:\Users\jagmeet.jag-richi\Documents\Git\ChatApp.Console\ChatApp.Console\bin\Debug\ChatApp.Console.exe";
+            chatProcess.StartInfo.UseShellExecute = true;
+            chatProcess.StartInfo.Arguments = string.Format("{0} {1}", "Jags", path);
+            chatProcess.Start();
+        }
         private void HandleOK(Messages.Ok ok)
         {
             

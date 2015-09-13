@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace ChatApp.Common
 {
+
     public class Messages
     {
         public class SetPrompt
@@ -137,14 +138,21 @@ namespace ChatApp.Common
         }
         public class ChatMessage
         {
-            public string From { get; private set; }
-            public string To { get; private set; }
+            public String From { get; private set; }
             public string Message { get; private set; }
-            public ChatMessage(string from,string to,string message)
+            public ChatMessage(string from ,string message)
             {
-                message = Message;
+                Message  = message;
                 From = from;
-                To = to;
+            }
+        }
+        public class AttachConsole
+        {
+            public IActorRef ConsoleActor { get; set; }
+
+            public AttachConsole(IActorRef consoleActor)
+            {
+                ConsoleActor = consoleActor;
             }
         }
         public class StatusCheck

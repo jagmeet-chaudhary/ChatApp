@@ -30,7 +30,7 @@ namespace ChatApp.Common
         {
 
             var actorSystemName = ConfigurationManager.AppSettings["ActorSystemName"];
-            actorSystem = ActorSystem.Create(actorSystemName);
+            actorSystem = ExtendedActorSystem.Create(actorSystemName);
         }
         public static ActorSystemContainer Instance
         {

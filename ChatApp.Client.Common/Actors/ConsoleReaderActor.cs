@@ -14,6 +14,7 @@ namespace ChatApp.Common
         private string _prompt;
          protected override void OnReceive(object message)
         {
+             
             if (message is Messages.ContinueProcessing)
             {
 

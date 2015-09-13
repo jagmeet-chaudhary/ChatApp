@@ -1,5 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.Configuration;
+using ChatApp.Client.Common;
+using ChatApp.Commmon;
 using ChatApp.Common;
 using System;
 using System.Collections.Generic;
@@ -11,56 +13,20 @@ using System.Threading.Tasks;
 
 namespace ChatApp.Console
 {
-    class ConsoleCommands
-    {
-        [Command("StartChat")]
-        public static void StartChat([CommandParameter("u")]string userName)
-        {
-            System.Console.WriteLine("Starting chat with ..." + userName);
-        }
-        [Command("Exit")]
-        public static void Exit()
-        {
-            Environment.Exit(0);
-        }
-
-        public static void ListCommands()
-        {
-            System.Console.WriteLine("Start chat with a user [ - StartChat -u {username}]");
-            System.Console.WriteLine("Exit [ exit]");
-        }
-    }
- 
-    // ChatWith -u --username {Name}
-    // exit -c --close
     class Program
     {
 
         static void Main(string[] args)
         {
-            try
-            {
-                //args = new string[1];
-                //args[0] = "Exit";
-                //args[1] = "-u";
-                //args[2] = "jagmeet";
-                System.Console.WriteLine("Started console...");
-                System.Console.ReadLine();
-                //CommandLineExecutor.InvokeCommand(args, typeof(ConsoleCommands));
-            }
-            catch( InvalidCommandException iex)
-            {
-                System.Console.WriteLine(iex.Message);
-                System.Console.WriteLine("List of valid commands:");
-                ConsoleCommands.ListCommands();
-            }
-            catch (Exception ex)
-            {
-                System.Console.WriteLine("Invalid Command");
-                System.Console.WriteLine("List of valid commands:");
-                ConsoleCommands.ListCommands();
+           var userName = args[0];
+           var path = args[1];
+           
+            var _chatConsoleActor = ActorSystemContainer.Instance.System.ActorOf(Props.Create(
+                () => new ChatConsoleActor(userName,path)),string.Format("ChatConsole_{0}",userName)
+                );
+            _chatConsoleActor.Tell(new Messages.ContinueProcessing());
+            ActorSystemContainer.Instance.System.AwaitTermination();
                 
-            }
         }
 
     }

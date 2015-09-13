@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\ChatConsoleActor.cs" />
     <Compile Include="Actors\ConsoleActorContainer.cs" />
     <Compile Include="Actors\ConsoleMessages.cs" />
     <Compile Include="Actors\ConsoleReaderActor.cs" />
