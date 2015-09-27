@@ -128,6 +128,7 @@ namespace ChatApp.Client
             Context.ActorOf(Props.Create<ChatClientActor>(Self, "Jags"), "Jags");
             var dkjd = ((ExtendedActorSystem)ActorSystemContainer.Instance.System).Provider.DefaultAddress;
             var path = string.Format(@"{0}/{1}", Self.Path.ToStringWithAddress(dkjd), "Jags");
+
             var chatProcess = new Process();
             chatProcess.StartInfo.FileName = @"C:\Users\jagmeet.jag-richi\Documents\Git\ChatApp.Console\ChatApp.Console\bin\Debug\ChatApp.Console.exe";
             chatProcess.StartInfo.UseShellExecute = true;

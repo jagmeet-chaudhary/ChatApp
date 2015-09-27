@@ -31,16 +31,7 @@ namespace ChatApp.ChatConsole
         {
             //Come online
             var clientCoordinatorActor = ActorSystemContainer.Instance.System.ActorOf(Props.Create(() => new ChatClientCoordinatorActor()), ActorNames.ClientCoordinatorActor);
-            
             ActorSystemContainer.Instance.System.AwaitTermination();
-            //var consoleReaderActor = ClientActorSystemContainer.Instance.System.ActorOf(Props.Create(() => new ConsoleReaderActor()));
-            //clientCoordinatorActor.Tell("Start");
-            //while(true)
-            //{
-            //    Console.WriteLine("Command>");
-            //    var command = Console.ReadLine();
-
-            //}
         }
     }
 }
