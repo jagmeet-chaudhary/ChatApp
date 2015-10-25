@@ -12,30 +12,39 @@ namespace ChatApp.Server
     {
         public ChatUserReference()
         {
-            StatusCheckRetryCounter = 3;
         }
         public IActorRef ActorReference { get; set; }
-        public int StatusCheckRetryCounter { get; set; }
+        
     }
     public class ChatServerCoordinatorActor : ReceiveActor
     {
         List<string> _registeredUsers;
         Dictionary<string, ChatUserReference> _userAddresses;
+        Dictionary<Guid, IActorRef> _chatSessions;
 
         public ChatServerCoordinatorActor()
         {
             _userAddresses = new Dictionary<string, ChatUserReference>();
+            _chatSessions = new Dictionary<Guid, IActorRef>();
             _registeredUsers = new List<string>();
+            Become(InitializeServer);
+            //Become(Testing);
+            ConsoleActorContainer.Instance.WriterActor.Tell("Server started...");
+            
+        }
+
+        private void Testing()
+        {
+        }
+        private void InitializeServer()
+        {
             Receive<Messages.RegisterUser>(x => HandleRegisterUser(x));
             Receive<Messages.TryInitializeChat>(x => HandleTryInitializeChat(x));
             Receive<Terminated>(x => HandleTerminated(x));
 
             Receive<Messages.ChangeState>(x => x.State == UserState.Online, x => HandleStateOnline(x));
             Receive<Messages.ChangeState>(x => x.State == UserState.Offline, x => HandleStateOffline(x));
-            ConsoleActorContainer.Instance.WriterActor.Tell("Server started...");
-            
         }
-
         private void HandleTerminated(Terminated terminatedMsg)
         {
             foreach(var userAddress in _userAddresses)
@@ -74,14 +83,41 @@ namespace ChatApp.Server
             Console.Write(x.Message);
         }
 
-        private void HandleTryInitializeChat(Messages.TryInitializeChat x)
+        private void HandleTryInitializeChat(Messages.TryInitializeChat tryInitializeChatMsg)
         {
-             if (_userAddresses.Keys.Contains(x.To) && _userAddresses.Keys.Contains(x.From))
+             if (_userAddresses.Keys.Contains(tryInitializeChatMsg.From))
             {
-                var chatServerActor = Context.ActorOf(Props.Create(() =>
-                      new ChatServerActor()));
-                _userAddresses[x.To].ActorReference.Tell(new Messages.StartChat(chatServerActor));
-                _userAddresses[x.From].ActorReference.Tell(new Messages.StartChat(chatServerActor));
+                IActorRef chatServerActor = null;
+                Guid sessionId = Guid.Empty;
+                if (tryInitializeChatMsg.SessionId == Guid.Empty)
+                {
+                    chatServerActor = Context.ActorOf(Props.Create(() =>
+                          new ChatServerActor()));
+
+                    sessionId = Guid.NewGuid();
+                    _chatSessions.Add(sessionId, chatServerActor);
+                    _userAddresses[tryInitializeChatMsg.From].ActorReference.Tell(new Messages.StartChat(sessionId,chatServerActor));
+
+                }
+                else
+                {
+                    chatServerActor = _chatSessions[tryInitializeChatMsg.SessionId];
+                    sessionId = tryInitializeChatMsg.SessionId;
+                }
+                 
+
+                tryInitializeChatMsg.UserList.ForEach(x =>
+                {
+                    if(_userAddresses.Keys.Contains(x))
+                    {
+                        _userAddresses[x].ActorReference.Tell(new Messages.StartChat(sessionId,chatServerActor));
+                    }
+                    else
+                    {
+                        _userAddresses[tryInitializeChatMsg.From].ActorReference.Tell(
+                            new Messages.StatusMessage(string.Format("Cannot add {0} to the chat as user is offline.",x),StatusMessageType.Error));
+                    }
+                }); 
             }
         }
 

@@ -10,26 +10,24 @@ using System.Threading.Tasks;
 using ChatApp.Common;
 using System.Diagnostics;
 using ChatApp.Client.Common;
+using System.Configuration;
+using System.IO;
+
 namespace ChatApp.Client
 {
     public class ChatClientCoordinatorActor : ReceiveActor
     {
         private string _userName;
         private ActorSelection _chatServerCoordinatorActor;
-        List<IActorRef> clientActors = new List<IActorRef>();
-        private IActorRef _serverActor;
+        Dictionary<Guid, IActorRef> clientActors = new Dictionary<Guid, IActorRef>();
+        //private IActorRef _serverActor;
         public ChatClientCoordinatorActor()
         {
-
-            
-            
             
             Become(LoggedOut);
             //Become(Testing);
             ConsoleActorContainer.Instance.ReaderActor.Tell(new Messages.ContinueProcessing());
         }
-
-       
         private void LoggedOut()
         {
             ConsoleActorContainer.Instance.ReaderActor.Tell(new Messages.SetPrompt("LoggedOut"));
@@ -44,13 +42,23 @@ namespace ChatApp.Client
             Receive<Messages.StartChat>(x => HandleStartChat(x));
             Receive<Messages.Ping>(x => HandlePing(x));
             Receive<Messages.ConsoleCommand>(x => HandleConsoleCommand(x));
-
+            Receive<Messages.StatusMessage>(x => HandleStatusMessage(x));
+            Receive<Messages.InvitePeople>(x => HandleInvitePeople(x));
             //Conosle Command messages
             Receive<ConsoleCommandMessages.StartChatCommandMessage>(x => HandleStartChatCommand(x));
             Receive<ConsoleCommandMessages.LogOutCommandMessage>(x => HandleLogOutCommand(x));
             
         }
 
+        private void HandleInvitePeople(Messages.InvitePeople invitePeopleMsg)
+        {
+            _chatServerCoordinatorActor.Tell(new Messages.TryInitializeChat(invitePeopleMsg.SessionId,_userName, invitePeopleMsg.UserList));
+        }
+
+        private void HandleStatusMessage(Messages.StatusMessage statusMessageMsg)
+        {
+            ConsoleActorContainer.Instance.WriterActor.Tell(statusMessageMsg);
+        }
         private void HandleLogOutCommand(ConsoleCommandMessages.LogOutCommandMessage x)
         {
             _userName = string.Empty;
@@ -63,31 +71,24 @@ namespace ChatApp.Client
             _chatServerCoordinatorActor.Tell(new Messages.ChangeState(UserState.Online, _userName));
             Become(LoggedIn);
         }
-
         private void  HandleStartChatCommand(ConsoleCommandMessages.StartChatCommandMessage startChatCommandMsg)
         {
-            
-
-            _chatServerCoordinatorActor.Ask<Messages.StartChat>(new Messages.TryInitializeChat(_userName, startChatCommandMsg.UserName))
+            _chatServerCoordinatorActor.Ask<Messages.StartChat>(new Messages.TryInitializeChat(Guid.Empty,_userName, new List<string>() { startChatCommandMsg.UserName }))
                 .PipeTo<Messages.StartChat>(Self);
         }
-
         private void HandlePing(Messages.Ping x)
         {
             Console.WriteLine("received : " + x.Message);
         }
         protected override void PostStop()
         {
-            ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.InputSuccess("Stopping...."));
-           
+            ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.StatusMessage("Stopping...", StatusMessageType.Info));
             base.PostStop();
         }
-        
-      
         protected override void PreStart()
         {
             //get a reference to the remote actor
-            _chatServerCoordinatorActor = ActorSystemContainer.Instance.System.ActorSelection("akka.tcp://ChatAppServer@localhost:8080/user/ChatApp");
+            _chatServerCoordinatorActor = ActorSystemContainer.Instance.System.ActorSelection(ConfigurationManager.AppSettings["ServerAddress"]);
             base.PreStart();
         }
         private void HandleConsoleCommand(Messages.ConsoleCommand consoleCommandMsg)
@@ -100,27 +101,24 @@ namespace ChatApp.Client
             }
             catch (InvalidCommandException ex)
             {
-                ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.InputError(ex.Message));
+                ConsoleActorContainer.Instance.WriterActor.Tell(new Messages.StatusMessage(ex.Message,StatusMessageType.Error));
                 
             }
             
         }
         private void HandleStartChat(Messages.StartChat startChatMsg)
         {
-            _serverActor = startChatMsg.Server;
-            IActorRef clientActor = Context.ActorOf(Props.Create<ChatClientActor>(_serverActor,_userName),_userName);
+            
+            IActorRef clientActor = Context.ActorOf(Props.Create<ChatClientActor>(startChatMsg.Server, _userName, startChatMsg.SessionId), _userName);
             var remoteAddress = ((ExtendedActorSystem)ActorSystemContainer.Instance.System).Provider.DefaultAddress;
             var clientActorFullRemoteAddress = clientActor.Path.ToStringWithAddress(remoteAddress);
-            clientActors.Add(clientActor);
+            clientActors.Add(startChatMsg.SessionId, clientActor);
 
             var chatProcess = new Process();
-            chatProcess.StartInfo.FileName = @"C:\Users\jagmeet.jag-richi\Documents\Git\ChatApp.Console\ChatApp.Console\bin\Debug\ChatApp.Console.exe";
+            chatProcess.StartInfo.FileName = @"ChatApp.Console.exe";
             chatProcess.StartInfo.UseShellExecute = true;
             chatProcess.StartInfo.Arguments = string.Format("{0} {1}", _userName, clientActorFullRemoteAddress);
             chatProcess.Start();
-
-
-
         }
         private void Testing()
         {

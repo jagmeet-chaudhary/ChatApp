@@ -25,5 +25,11 @@ namespace ChatApp.Common
         public class LogOutCommandMessage
         {
         }
+        [Command("InvitePeople")]
+        public class InvitePeopleCommandMessage
+        {
+            [CommandParameter("ul")]
+            public string UserList { get; private set; }
+        }
     }
 }

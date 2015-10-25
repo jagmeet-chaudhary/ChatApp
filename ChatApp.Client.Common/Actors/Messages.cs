@@ -10,6 +10,17 @@ namespace ChatApp.Common
 
     public class Messages
     {
+        public class StatusMessage
+        {
+            public StatusMessageType MessageType { get; private set; }
+            public string Message { get; private set; }
+
+            public StatusMessage(string _message,StatusMessageType _messageType)
+            {
+                Message = _message; MessageType = _messageType;
+            }
+
+        }
         public class SetPrompt
         {
             public SetPrompt(string prompt)
@@ -18,49 +29,6 @@ namespace ChatApp.Common
             }
             public string Prompt { get; private set; }
         }
-        #region Success message
-        public class InputSuccess
-        {
-            public InputSuccess(string reason)
-            {
-                Reason = reason;
-            }
-            public string Reason { get; private set; }
-
-        }
-        #endregion
-
-        #region Error Message
-        /// <summary>
-        /// Base class for signalling that user input was invalid.
-        /// </summary>
-        public class InputError
-        {
-            public InputError(string reason)
-            {
-                Reason = reason;
-            }
-
-            public string Reason { get; private set; }
-        }
-
-        /// <summary>
-        /// User provided blank input.
-        /// </summary>
-        public class NullInputError : InputError
-        {
-            public NullInputError(string reason) : base(reason) { }
-        }
-
-        /// <summary>
-        /// User provided invalid input (currently, input w/ odd # chars)
-        /// </summary>
-        public class ValidationError : InputError
-        {
-            public ValidationError(string reason) : base(reason) { }
-        }
-        #endregion
-
         public class ContinueProcessing { }
 
         public class ConsoleCommand
@@ -98,20 +66,24 @@ namespace ChatApp.Common
 
         public class TryInitializeChat
         {
-            public TryInitializeChat (string from,string to)
-	        {
-                From = from;To = to;
-	        }
+            public Guid SessionId { get; private set; }
+            public List<String> UserList { get; private set; }
             public string From { get; private set; }
-            public string To { get; private set; }
-
+            public TryInitializeChat (Guid _sessionId,string _from,List<string> _userList)
+	        {
+                SessionId = _sessionId;
+                UserList = _userList;
+                From = _from;
+	        }
         }
         public class StartChat
         {
+            public Guid SessionId { get; private set; }
             public IActorRef Server { get; private set; }
-            public StartChat(IActorRef server)
+            public StartChat(Guid _sessionId,IActorRef _server)
             {
-                Server = server;
+                Server = _server;
+                SessionId = _sessionId;
             }
         }
         public class AddToChat
@@ -148,15 +120,22 @@ namespace ChatApp.Common
         }
         public class AttachConsole
         {
-            public IActorRef ConsoleActor { get; set; }
+            public IActorRef ConsoleActor { get;  private set; }
 
             public AttachConsole(IActorRef consoleActor)
             {
                 ConsoleActor = consoleActor;
             }
         }
-        public class StatusCheck
+        public class InvitePeople
         {
+            public Guid SessionId { get; private set; }
+            public List<string> UserList { get; private set; }
+            public InvitePeople(List<string> userList,Guid sessionId)
+            {
+                UserList = userList;
+                SessionId = sessionId;
+            }
         }
        
     }
@@ -166,4 +145,12 @@ namespace ChatApp.Common
         Offline,
         Online,
     };
+    public enum StatusMessageType
+    {
+        None,
+        Error,
+        Info,
+        Warning,
+        Success
+    }
 }

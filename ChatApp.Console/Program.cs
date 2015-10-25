@@ -19,7 +19,6 @@ namespace ChatApp.Console
 
         static void Main(string[] args)
         {
-            System.Console.ReadLine();
            var userName = args[0];
            var path = args[1];
             var _chatConsoleActor = ActorSystemContainer.Instance.System.ActorOf(Props.Create(

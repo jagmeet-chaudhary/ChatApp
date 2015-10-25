@@ -4,7 +4,9 @@ using ChatApp.Client.Common;
 using ChatApp.Common;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,13 +27,28 @@ namespace ChatApp.ChatConsole
         }
 
     }
+    
+
     class Program
     {
+        
         static void Main(string[] args)
         {
-            //Come online
-            var clientCoordinatorActor = ActorSystemContainer.Instance.System.ActorOf(Props.Create(() => new ChatClientCoordinatorActor()), ActorNames.ClientCoordinatorActor);
-            ActorSystemContainer.Instance.System.AwaitTermination();
+            FileStream fileStream = null;
+            try
+            {
+                fileStream = new FileStream (Utility.GetErrorLogFileName(), FileMode.Append);
+                Utility.RedirectStandardErrorToFile(fileStream);
+           
+                //Come online
+                var clientCoordinatorActor = ActorSystemContainer.Instance.System.ActorOf(Props.Create(() => new ChatClientCoordinatorActor()), ActorNames.ClientCoordinatorActor);
+                ActorSystemContainer.Instance.System.AwaitTermination();
+            }
+            finally
+            {
+                fileStream.Dispose();
+            }
+
         }
     }
 }

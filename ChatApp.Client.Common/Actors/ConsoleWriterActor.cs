@@ -10,23 +10,28 @@ namespace ChatApp.Common
 {
     public class ConsoleWriterActor : UntypedActor
     {
+        Dictionary<StatusMessageType, ConsoleColor> messageColors = new Dictionary<StatusMessageType, ConsoleColor>();
+        public ConsoleWriterActor()
+        {
+            messageColors.Add(StatusMessageType.Error, ConsoleColor.Red);
+            messageColors.Add(StatusMessageType.Success, ConsoleColor.Green);
+            messageColors.Add(StatusMessageType.Warning, ConsoleColor.Yellow);
+            messageColors.Add(StatusMessageType.Info, ConsoleColor.Gray);
+            messageColors.Add(StatusMessageType.None, ConsoleColor.White);
+
+        }
         protected override void OnReceive(object message)
         {
-            if (message is Messages.InputError)
+            if(message is Messages.StatusMessage)
             {
-
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine((message as Messages.InputError).Reason);
-            }
-            else if (message is Messages.InputSuccess)
-            {
-
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine((message as Messages.InputSuccess).Reason);
+                var statusMessage = message as Messages.StatusMessage;
+                var color = messageColors[statusMessage.MessageType];
+                Console.ForegroundColor = color;
+                Console.WriteLine(statusMessage.Message);
+                
             }
             else
             {
-                Console.ForegroundColor = ConsoleColor.Blue;
                 Console.WriteLine(message);
             }
             Console.ResetColor();
